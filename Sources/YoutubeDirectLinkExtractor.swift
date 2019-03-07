@@ -13,9 +13,15 @@ public class YoutubeDirectLinkExtractor {
     private let infoBasePrefix = "https://www.youtube.com/get_video_info?video_id="
     private let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/604.5.6 (KHTML, like Gecko) Version/11.0.3 Safari/604.5.6"
     
+    private var session: URLSession = URLSession.shared
+    
     // MARK: - Public
     
     public init() {
+    }
+    
+    public init(session: URLSession) {
+        self.session = session
     }
     
     public func extractInfo(for source: ExtractionSource,
@@ -57,21 +63,26 @@ public class YoutubeDirectLinkExtractor {
         r.httpMethod = "GET"
         r.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         
-        URLSession.shared.dataTask(with: r as URLRequest) { data, response, error in
+        session.dataTask(with: r as URLRequest) { data, response, error in
 
             guard let data = data else {
-                completion([], error ?? Error.noDataInResponse)
+                DispatchQueue.main.async {
+                    completion([], error ?? Error.noDataInResponse)
+                }
                 return
             }
             
             guard let dataString = String(data: data, encoding: .utf8) else {
-                completion([], Error.cantConvertDataToString)
+                DispatchQueue.main.async {
+                    completion([], Error.cantConvertDataToString)
+                }
                 return
             }
             
             let extractionResult = self.extractInfo(from: dataString)
-            completion(extractionResult.0, extractionResult.1)
-            
+            DispatchQueue.main.async {
+                completion(extractionResult.0, extractionResult.1)
+            }
         }.resume()
     }
     
